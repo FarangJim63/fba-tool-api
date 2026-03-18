@@ -330,13 +330,18 @@ export default function Home() {
                                 Limite atteinte — version gratuite (2 produits max)
                               </p>
                               <a
-                                href="#premium"
+                                href="https://buy.stripe.com/9B6eVfgIwd2LelC123aR200"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
                               >
                                 🚀 Passer à la version premium
                               </a>
                               <p className="text-[11px] text-amber-600/80">
                                 Accès illimité + comparaison avancée + scoring complet
+                              </p>
+                              <p className="text-[10px] text-amber-500/70 flex items-center justify-center gap-1">
+                                🔒 Paiement sécurisé via Stripe
                               </p>
                             </div>
                           )}

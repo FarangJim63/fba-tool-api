@@ -2,16 +2,18 @@ import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calculator, Package, Plane, Receipt, Tag } from "lucide-react";
+import { BookmarkPlus, Calculator, Package, Plane, Receipt, Tag } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResultsDisplay } from "@/components/results-display";
-
-export type Currency = "USD" | "EUR";
+import { ProductList } from "@/components/product-list";
+import { useProducts } from "@/hooks/use-products";
+import { type Currency, calcMetrics } from "@/lib/fba-utils";
 
 const calculatorSchema = z.object({
+  productName: z.string().min(1, "Nom requis"),
   sellingPrice: z.coerce.number({ invalid_type_error: "Doit être un nombre" }).min(0, "Ne peut pas être négatif"),
   productCost: z.coerce.number({ invalid_type_error: "Doit être un nombre" }).min(0, "Ne peut pas être négatif"),
   amazonFees: z.coerce.number({ invalid_type_error: "Doit être un nombre" }).min(0, "Ne peut pas être négatif"),
@@ -20,14 +22,19 @@ const calculatorSchema = z.object({
 
 type CalculatorValues = z.infer<typeof calculatorSchema>;
 
+export type { Currency };
+
 export default function Home() {
   const [results, setResults] = useState<CalculatorValues | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
   const [currency, setCurrency] = useState<Currency>("USD");
+  const { products, addProduct, removeProduct, clearAll } = useProducts();
 
   const form = useForm<CalculatorValues>({
     resolver: zodResolver(calculatorSchema),
     defaultValues: {
+      productName: "",
       sellingPrice: 0,
       productCost: 0,
       amazonFees: 0,
@@ -43,6 +50,37 @@ export default function Home() {
     }, 400);
   };
 
+  const handleSave = () => {
+    if (!results) return;
+    const name = form.getValues("productName");
+    if (!name.trim()) {
+      form.setError("productName", { message: "Nom requis pour sauvegarder" });
+      return;
+    }
+    const { profit, margin, roi, score } = calcMetrics(
+      results.sellingPrice,
+      results.productCost,
+      results.amazonFees,
+      results.shippingCost
+    );
+    addProduct({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: name.trim(),
+      currency,
+      sellingPrice: results.sellingPrice,
+      productCost: results.productCost,
+      amazonFees: results.amazonFees,
+      shippingCost: results.shippingCost,
+      profit,
+      margin,
+      roi,
+      score,
+      savedAt: Date.now(),
+    });
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 2000);
+  };
+
   const currencySymbol = currency === "USD" ? "$" : "€";
 
   return (
@@ -51,10 +89,11 @@ export default function Home() {
         className="absolute top-0 w-full h-[40vh] bg-cover bg-center bg-no-repeat opacity-90 border-b border-border/50 shadow-sm"
         style={{ backgroundImage: `url(${import.meta.env.BASE_URL}images/hero-bg.png)` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/40 to-background"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/40 to-background" />
       </div>
 
       <main className="relative z-10 flex-grow pt-12 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        {/* Header */}
         <div className="mb-10 text-center max-w-2xl mx-auto text-primary-foreground">
           <div className="inline-flex items-center justify-center p-3 bg-white/10 backdrop-blur-md rounded-2xl mb-4 shadow-lg shadow-black/5 ring-1 ring-white/20">
             <Calculator className="w-8 h-8 text-white" />
@@ -70,7 +109,9 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Calculator + Results */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start mb-8">
+          {/* Form */}
           <div className="lg:col-span-5">
             <Card className="shadow-xl shadow-black/5 border-border/50 backdrop-blur-sm bg-card/95">
               <CardHeader className="pb-4 border-b border-border/50 bg-muted/10 rounded-t-xl">
@@ -84,36 +125,51 @@ export default function Home() {
                       Saisissez les coûts pour une unité.
                     </CardDescription>
                   </div>
+                  {/* Currency toggle */}
                   <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-                    <button
-                      type="button"
-                      onClick={() => setCurrency("USD")}
-                      className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${
-                        currency === "USD"
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      $ USD
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCurrency("EUR")}
-                      className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${
-                        currency === "EUR"
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      € EUR
-                    </button>
+                    {(["USD", "EUR"] as Currency[]).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setCurrency(c)}
+                        className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-all ${
+                          currency === c
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {c === "USD" ? "$ USD" : "€ EUR"}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    {/* Product Name */}
+                    <FormField
+                      control={form.control}
+                      name="productName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 text-sm font-semibold">
+                            <BookmarkPlus className="w-4 h-4 text-muted-foreground" />
+                            Nom du produit
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Ex: Ceinture en cuir noir"
+                              className="h-12 text-base rounded-xl focus-visible:ring-primary/20 focus-visible:border-primary transition-all shadow-sm"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
+                    {/* Selling Price */}
                     <FormField
                       control={form.control}
                       name="sellingPrice"
@@ -125,7 +181,9 @@ export default function Home() {
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">{currencySymbol}</span>
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                                {currencySymbol}
+                              </span>
                               <Input
                                 type="number"
                                 step="0.01"
@@ -141,6 +199,7 @@ export default function Home() {
                       )}
                     />
 
+                    {/* Product Cost */}
                     <FormField
                       control={form.control}
                       name="productCost"
@@ -152,7 +211,9 @@ export default function Home() {
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">{currencySymbol}</span>
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                                {currencySymbol}
+                              </span>
                               <Input
                                 type="number"
                                 step="0.01"
@@ -168,6 +229,7 @@ export default function Home() {
                       )}
                     />
 
+                    {/* Amazon Fees */}
                     <FormField
                       control={form.control}
                       name="amazonFees"
@@ -179,7 +241,9 @@ export default function Home() {
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">{currencySymbol}</span>
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                                {currencySymbol}
+                              </span>
                               <Input
                                 type="number"
                                 step="0.01"
@@ -195,6 +259,7 @@ export default function Home() {
                       )}
                     />
 
+                    {/* Shipping */}
                     <FormField
                       control={form.control}
                       name="shippingCost"
@@ -206,7 +271,9 @@ export default function Home() {
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">{currencySymbol}</span>
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                                {currencySymbol}
+                              </span>
                               <Input
                                 type="number"
                                 step="0.01"
@@ -222,15 +289,33 @@ export default function Home() {
                       )}
                     />
 
-                    <div className="pt-2">
+                    {/* Action buttons */}
+                    <div className="pt-2 flex flex-col gap-2">
                       <Button
                         type="submit"
                         size="lg"
-                        className="w-full h-13 text-base font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                        className="w-full h-12 text-base font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
                         disabled={isCalculating}
                       >
                         {isCalculating ? "Calcul en cours..." : "Calculer le profit"}
                       </Button>
+
+                      {results && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="lg"
+                          onClick={handleSave}
+                          className={`w-full h-12 text-base font-bold rounded-xl transition-all duration-200 flex items-center gap-2 ${
+                            savedFlash
+                              ? "border-emerald-500 text-emerald-600 bg-emerald-50"
+                              : "hover:-translate-y-0.5"
+                          }`}
+                        >
+                          <BookmarkPlus className="w-4 h-4" />
+                          {savedFlash ? "Produit sauvegardé ✓" : "Sauvegarder ce produit"}
+                        </Button>
+                      )}
                     </div>
                   </form>
                 </Form>
@@ -238,10 +323,18 @@ export default function Home() {
             </Card>
           </div>
 
+          {/* Results */}
           <div className="lg:col-span-7">
             <ResultsDisplay data={results} currency={currency} />
           </div>
         </div>
+
+        {/* Product comparison list */}
+        <ProductList
+          products={products}
+          onRemove={removeProduct}
+          onClearAll={clearAll}
+        />
       </main>
     </div>
   );

@@ -79,15 +79,30 @@ export function ProductList({ products, onRemove, onClearAll }: ProductListProps
         </div>
 
         {/* Free tier banner */}
-        <div className="mt-3 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          <Lock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-          <p className="text-xs text-amber-700 font-medium">
-            Version gratuite — limitée à {FREE_LIMIT} produits
-            <span className="text-amber-500 ml-1">
-              ({products.length}/{FREE_LIMIT})
-            </span>
-          </p>
-        </div>
+        {products.length < FREE_LIMIT ? (
+          <div className="mt-3 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <Lock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+            <p className="text-xs text-amber-700 font-medium">
+              Version gratuite — limitée à {FREE_LIMIT} produits
+              <span className="text-amber-500 ml-1">({products.length}/{FREE_LIMIT})</span>
+            </p>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-center space-y-3">
+            <p className="text-xs text-amber-700 font-medium flex items-center justify-center gap-1.5">
+              <Lock className="w-3.5 h-3.5" /> Limite atteinte — {FREE_LIMIT}/{FREE_LIMIT} produits sauvegardés
+            </p>
+            <a
+              href="#premium"
+              className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+            >
+              🚀 Passer à la version premium
+            </a>
+            <p className="text-[11px] text-amber-600/80">
+              Accès illimité + comparaison avancée + scoring complet
+            </p>
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="p-4 space-y-3">

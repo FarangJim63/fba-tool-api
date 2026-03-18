@@ -325,9 +325,20 @@ export default function Home() {
                             {savedFlash ? "Produit sauvegardé ✓" : "Sauvegarder ce produit"}
                           </Button>
                           {products.length >= FREE_LIMIT && (
-                            <p className="text-xs text-center text-amber-600 font-medium px-1">
-                              Passez à la version premium pour sauvegarder plus de produits
-                            </p>
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center space-y-3">
+                              <p className="text-xs text-amber-700 font-medium">
+                                Limite atteinte — version gratuite (2 produits max)
+                              </p>
+                              <a
+                                href="#premium"
+                                className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                              >
+                                🚀 Passer à la version premium
+                              </a>
+                              <p className="text-[11px] text-amber-600/80">
+                                Accès illimité + comparaison avancée + scoring complet
+                              </p>
+                            </div>
                           )}
                         </div>
                       )}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpDown, Star, Trash2, Trophy } from "lucide-react";
+import { ArrowUpDown, Lock, Star, Trash2, Trophy } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,8 @@ import {
   getScoreLabel,
   profitabilityConfig,
 } from "@/lib/fba-utils";
+
+const FREE_LIMIT = 2;
 
 interface ProductListProps {
   products: SavedProduct[];
@@ -74,6 +76,17 @@ export function ProductList({ products, onRemove, onClearAll }: ProductListProps
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Free tier banner */}
+        <div className="mt-3 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          <Lock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+          <p className="text-xs text-amber-700 font-medium">
+            Version gratuite — limitée à {FREE_LIMIT} produits
+            <span className="text-amber-500 ml-1">
+              ({products.length}/{FREE_LIMIT})
+            </span>
+          </p>
         </div>
       </CardHeader>
 

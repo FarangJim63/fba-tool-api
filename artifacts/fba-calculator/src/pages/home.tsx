@@ -50,11 +50,16 @@ export default function Home() {
     }, 400);
   };
 
+  const FREE_LIMIT = 2;
+
   const handleSave = () => {
     if (!results) return;
     const name = form.getValues("productName");
     if (!name.trim()) {
       form.setError("productName", { message: "Nom requis pour sauvegarder" });
+      return;
+    }
+    if (products.length >= FREE_LIMIT) {
       return;
     }
     const { profit, margin, roi, score } = calcMetrics(
@@ -301,20 +306,30 @@ export default function Home() {
                       </Button>
 
                       {results && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="lg"
-                          onClick={handleSave}
-                          className={`w-full h-12 text-base font-bold rounded-xl transition-all duration-200 flex items-center gap-2 ${
-                            savedFlash
-                              ? "border-emerald-500 text-emerald-600 bg-emerald-50"
-                              : "hover:-translate-y-0.5"
-                          }`}
-                        >
-                          <BookmarkPlus className="w-4 h-4" />
-                          {savedFlash ? "Produit sauvegardé ✓" : "Sauvegarder ce produit"}
-                        </Button>
+                        <div className="space-y-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="lg"
+                            onClick={handleSave}
+                            disabled={products.length >= FREE_LIMIT}
+                            className={`w-full h-12 text-base font-bold rounded-xl transition-all duration-200 flex items-center gap-2 ${
+                              savedFlash
+                                ? "border-emerald-500 text-emerald-600 bg-emerald-50"
+                                : products.length >= FREE_LIMIT
+                                ? "opacity-50 cursor-not-allowed"
+                                : "hover:-translate-y-0.5"
+                            }`}
+                          >
+                            <BookmarkPlus className="w-4 h-4" />
+                            {savedFlash ? "Produit sauvegardé ✓" : "Sauvegarder ce produit"}
+                          </Button>
+                          {products.length >= FREE_LIMIT && (
+                            <p className="text-xs text-center text-amber-600 font-medium px-1">
+                              Passez à la version premium pour sauvegarder plus de produits
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </form>

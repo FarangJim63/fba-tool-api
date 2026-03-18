@@ -1,0 +1,17 @@
+packages:
+  "framer-motion": "Smooth layout animations and entry transitions for results"
+  "react-hook-form": "Form state management and validation"
+  "@hookform/resolvers": "Zod resolver for form validation"
+  "recharts": "Visual cost breakdown charts"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes"
+
+images:
+  - path: "artifacts/fba-calculator/public/images/hero-bg.png"
+    description: "Professional, abstract, minimal gradient mesh background in deep indigo and slate tones, reminiscent of a high-end fintech application header."
+    aspect_ratio: "16:9"
+
+notes:
+  - This is a standalone client-side calculator.
+  - No backend API endpoints are assumed.
+  - Calculations happen instantaneously or upon form submission.

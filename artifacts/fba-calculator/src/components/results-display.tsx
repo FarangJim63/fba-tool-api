@@ -1,8 +1,27 @@
 import { motion } from "framer-motion";
-import { ArrowDownIcon, ArrowUpIcon, DollarSign, Percent, PieChart, TrendingUp } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ArrowRightLeft,
+  DollarSign,
+  MinusCircle,
+  Percent,
+  PieChart,
+  TrendingUp,
+} from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  Cell,
+} from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import type { Currency } from "@/pages/home";
 
 interface ResultsDisplayProps {
   data: {
@@ -11,9 +30,56 @@ interface ResultsDisplayProps {
     amazonFees: number;
     shippingCost: number;
   } | null;
+  currency: Currency;
 }
 
-export function ResultsDisplay({ data }: ResultsDisplayProps) {
+type ProfitabilityLevel = "good" | "average" | "poor";
+
+function getProfitabilityLevel(margin: number): ProfitabilityLevel {
+  if (margin >= 30) return "good";
+  if (margin >= 15) return "average";
+  return "poor";
+}
+
+const profitabilityConfig: Record<
+  ProfitabilityLevel,
+  { label: string; labelAlt: string; color: string; bg: string; border: string; bar: string }
+> = {
+  good: {
+    label: "Profitable",
+    labelAlt: "Margin > 30% — Great deal!",
+    color: "text-emerald-600",
+    bg: "bg-emerald-500/10",
+    border: "bg-emerald-500",
+    bar: "#10b981",
+  },
+  average: {
+    label: "متوسط",
+    labelAlt: "Margin 15–30% — Acceptable",
+    color: "text-orange-500",
+    bg: "bg-orange-500/10",
+    border: "bg-orange-500",
+    bar: "#f97316",
+  },
+  poor: {
+    label: "Not Profitable",
+    labelAlt: "Margin < 15% — Risky",
+    color: "text-red-600",
+    bg: "bg-red-500/10",
+    border: "bg-red-500",
+    bar: "#ef4444",
+  },
+};
+
+export function ResultsDisplay({ data, currency }: ResultsDisplayProps) {
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat(currency === "USD" ? "en-US" : "de-DE", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+
   if (!data) {
     return (
       <Card className="h-full border-dashed bg-muted/30 shadow-none flex flex-col items-center justify-center p-12 text-center min-h-[500px]">
@@ -22,114 +88,174 @@ export function ResultsDisplay({ data }: ResultsDisplayProps) {
         </div>
         <h3 className="text-xl font-bold font-display mb-2 text-foreground">Waiting for input</h3>
         <p className="text-muted-foreground max-w-sm">
-          Enter your product costs and selling price on the left, then click calculate to see your FBA profit breakdown.
+          Enter your product costs and selling price on the left, then click calculate to see your
+          FBA profit breakdown.
         </p>
       </Card>
     );
   }
 
   const { sellingPrice, productCost, amazonFees, shippingCost } = data;
-  
+
   const totalCosts = productCost + amazonFees + shippingCost;
   const netProfit = sellingPrice - totalCosts;
   const profitMargin = sellingPrice > 0 ? (netProfit / sellingPrice) * 100 : 0;
-  
-  const isProfitable = netProfit >= 0;
+  const roi = totalCosts > 0 ? (netProfit / totalCosts) * 100 : 0;
+  const breakEvenPrice = totalCosts;
+
+  const level = getProfitabilityLevel(profitMargin);
+  const cfg = profitabilityConfig[level];
 
   const chartData = [
     { name: "Revenue", value: sellingPrice, type: "revenue" },
     { name: "Costs", value: totalCosts, type: "cost" },
-    { name: "Profit", value: Math.max(0, netProfit), type: "profit" }
+    { name: "Profit", value: Math.max(0, netProfit), type: "profit" },
   ];
-
-  const formatCurrency = (value: number) => 
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="space-y-6"
+      className="space-y-5"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="shadow-md border-border/50 overflow-hidden relative group">
-          <div className={`absolute top-0 left-0 w-1 h-full ${isProfitable ? 'bg-emerald-500' : 'bg-red-500'}`} />
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Net Profit</p>
-              <div className={`p-2 rounded-lg ${isProfitable ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
-                <DollarSign className="w-5 h-5" />
+      {/* Profitability Status Banner */}
+      <Card className={`shadow-md border-0 overflow-hidden ${cfg.bg}`}>
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className={`w-3 h-3 rounded-full flex-shrink-0 ${cfg.border}`} />
+          <div>
+            <p className={`text-lg font-bold ${cfg.color}`}>{cfg.label}</p>
+            <p className="text-sm text-muted-foreground">{cfg.labelAlt}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Key Metrics Grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Net Profit */}
+        <Card className="shadow-md border-border/50 overflow-hidden relative">
+          <div className={`absolute top-0 left-0 w-1 h-full ${cfg.border}`} />
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Net Profit
+              </p>
+              <div className={`p-1.5 rounded-lg ${cfg.bg}`}>
+                <DollarSign className={`w-4 h-4 ${cfg.color}`} />
               </div>
             </div>
-            <div className="flex items-baseline gap-2">
-              <h2 className={`text-4xl font-display font-bold tracking-tight ${isProfitable ? 'text-emerald-600' : 'text-red-600'}`}>
-                {formatCurrency(netProfit)}
-              </h2>
-            </div>
-            <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
-              {isProfitable ? (
-                <><ArrowUpIcon className="w-4 h-4 text-emerald-500" /> You are making money</>
+            <h2 className={`text-2xl sm:text-3xl font-display font-bold tracking-tight ${cfg.color}`}>
+              {formatCurrency(netProfit)}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+              {netProfit >= 0 ? (
+                <><ArrowUpIcon className="w-3 h-3 text-emerald-500" /> Making money</>
               ) : (
-                <><ArrowDownIcon className="w-4 h-4 text-red-500" /> You are losing money</>
+                <><ArrowDownIcon className="w-3 h-3 text-red-500" /> Losing money</>
               )}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-md border-border/50 overflow-hidden relative group">
-           <div className={`absolute top-0 left-0 w-1 h-full ${isProfitable ? 'bg-emerald-500' : 'bg-red-500'}`} />
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Net Margin</p>
-              <div className={`p-2 rounded-lg ${isProfitable ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
-                <Percent className="w-5 h-5" />
+        {/* Margin */}
+        <Card className="shadow-md border-border/50 overflow-hidden relative">
+          <div className={`absolute top-0 left-0 w-1 h-full ${cfg.border}`} />
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Margin
+              </p>
+              <div className={`p-1.5 rounded-lg ${cfg.bg}`}>
+                <Percent className={`w-4 h-4 ${cfg.color}`} />
               </div>
             </div>
-            <div className="flex items-baseline gap-2">
-              <h2 className={`text-4xl font-display font-bold tracking-tight ${isProfitable ? 'text-emerald-600' : 'text-red-600'}`}>
-                {profitMargin.toFixed(2)}%
-              </h2>
+            <h2 className={`text-2xl sm:text-3xl font-display font-bold tracking-tight ${cfg.color}`}>
+              {profitMargin.toFixed(1)}%
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+              <TrendingUp className="w-3 h-3" /> Of selling price
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* ROI */}
+        <Card className="shadow-md border-border/50 overflow-hidden relative">
+          <div className="absolute top-0 left-0 w-1 h-full bg-violet-500" />
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                ROI
+              </p>
+              <div className="p-1.5 rounded-lg bg-violet-500/10">
+                <TrendingUp className="w-4 h-4 text-violet-600" />
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
-              <TrendingUp className="w-4 h-4" /> Based on selling price
+            <h2 className={`text-2xl sm:text-3xl font-display font-bold tracking-tight ${roi >= 0 ? "text-violet-600" : "text-red-600"}`}>
+              {roi.toFixed(1)}%
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Profit ÷ Total cost
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Break-even */}
+        <Card className="shadow-md border-border/50 overflow-hidden relative">
+          <div className="absolute top-0 left-0 w-1 h-full bg-sky-500" />
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Break-even
+              </p>
+              <div className="p-1.5 rounded-lg bg-sky-500/10">
+                <ArrowRightLeft className="w-4 h-4 text-sky-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-display font-bold tracking-tight text-sky-600">
+              {formatCurrency(breakEvenPrice)}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Min. price to break even
             </p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Breakdown Card */}
       <Card className="shadow-md border-border/50">
         <CardHeader className="bg-muted/30 pb-4 border-b">
-          <CardTitle className="font-display text-xl">Profit Breakdown</CardTitle>
-          <CardDescription>Visual analysis of your product unit economics</CardDescription>
+          <CardTitle className="font-display text-lg">Profit Breakdown</CardTitle>
+          <CardDescription>Visual analysis of your unit economics</CardDescription>
         </CardHeader>
-        <CardContent className="p-6">
-          
-          <div className="h-[250px] w-full mb-8">
+        <CardContent className="p-5">
+          <div className="h-[220px] w-full mb-6">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+              <BarChart data={chartData} margin={{ top: 16, right: 0, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="name" 
+                <XAxis
+                  dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12, fontWeight: 600 }}
-                  dy={10}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11, fontWeight: 600 }}
+                  dy={8}
                 />
-                <YAxis 
+                <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                  tickFormatter={(val) => `$${val}`}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  tickFormatter={(val) => `${currency === "USD" ? "$" : "€"}${val}`}
+                  width={55}
                 />
-                <Tooltip 
-                  cursor={{ fill: 'hsl(var(--muted)/0.5)' }}
+                <Tooltip
+                  cursor={{ fill: "hsl(var(--muted)/0.5)" }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
                         <div className="bg-card border shadow-lg rounded-xl p-3">
-                          <p className="font-semibold">{payload[0].payload.name}</p>
-                          <p className="text-lg font-bold font-display">{formatCurrency(payload[0].value as number)}</p>
+                          <p className="font-semibold text-sm">{payload[0].payload.name}</p>
+                          <p className="text-lg font-bold font-display">
+                            {formatCurrency(payload[0].value as number)}
+                          </p>
                         </div>
                       );
                     }
@@ -138,13 +264,15 @@ export function ResultsDisplay({ data }: ResultsDisplayProps) {
                 />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={60}>
                   {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
+                    <Cell
+                      key={`cell-${index}`}
                       fill={
-                        entry.type === 'revenue' ? 'hsl(var(--primary))' : 
-                        entry.type === 'cost' ? 'hsl(var(--chart-2))' : 
-                        isProfitable ? 'hsl(var(--success))' : 'hsl(var(--destructive))'
-                      } 
+                        entry.type === "revenue"
+                          ? "hsl(var(--primary))"
+                          : entry.type === "cost"
+                          ? "hsl(var(--chart-2))"
+                          : cfg.bar
+                      }
                     />
                   ))}
                 </Bar>
@@ -152,17 +280,19 @@ export function ResultsDisplay({ data }: ResultsDisplayProps) {
             </ResponsiveContainer>
           </div>
 
-          <div className="space-y-4">
-            <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-4">Cost Details</h4>
-            
-            <div className="flex justify-between items-center py-2">
-              <span className="text-foreground font-medium">Selling Price</span>
-              <span className="font-semibold">{formatCurrency(sellingPrice)}</span>
+          <div className="space-y-3">
+            <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+              Cost Details
+            </h4>
+
+            <div className="flex justify-between items-center py-1.5">
+              <span className="text-foreground font-medium text-sm">Selling Price</span>
+              <span className="font-semibold text-sm">{formatCurrency(sellingPrice)}</span>
             </div>
-            
+
             <Separator />
-            
-            <div className="space-y-3 pl-4 border-l-2 border-muted">
+
+            <div className="space-y-2.5 pl-4 border-l-2 border-muted">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Product Cost</span>
                 <span className="text-foreground font-medium">-{formatCurrency(productCost)}</span>
@@ -178,10 +308,18 @@ export function ResultsDisplay({ data }: ResultsDisplayProps) {
             </div>
 
             <Separator />
-            
-            <div className="flex justify-between items-center py-2">
-              <span className="text-foreground font-bold">Total Costs</span>
-              <span className="font-bold text-red-500">-{formatCurrency(totalCosts)}</span>
+
+            <div className="flex justify-between items-center py-1.5">
+              <span className="text-foreground font-bold text-sm">Total Costs</span>
+              <span className="font-bold text-sm text-red-500">-{formatCurrency(totalCosts)}</span>
+            </div>
+
+            <div className="flex justify-between items-center py-1.5">
+              <span className="flex items-center gap-1.5 font-bold text-sm">
+                <MinusCircle className="w-4 h-4 text-muted-foreground" />
+                Net Profit
+              </span>
+              <span className={`font-bold text-sm ${cfg.color}`}>{formatCurrency(netProfit)}</span>
             </div>
           </div>
         </CardContent>

@@ -12,10 +12,10 @@ import { ResultsDisplay } from "@/components/results-display";
 export type Currency = "USD" | "EUR";
 
 const calculatorSchema = z.object({
-  sellingPrice: z.coerce.number({ invalid_type_error: "Must be a number" }).min(0, "Cannot be negative"),
-  productCost: z.coerce.number({ invalid_type_error: "Must be a number" }).min(0, "Cannot be negative"),
-  amazonFees: z.coerce.number({ invalid_type_error: "Must be a number" }).min(0, "Cannot be negative"),
-  shippingCost: z.coerce.number({ invalid_type_error: "Must be a number" }).min(0, "Cannot be negative"),
+  sellingPrice: z.coerce.number({ invalid_type_error: "Doit être un nombre" }).min(0, "Ne peut pas être négatif"),
+  productCost: z.coerce.number({ invalid_type_error: "Doit être un nombre" }).min(0, "Ne peut pas être négatif"),
+  amazonFees: z.coerce.number({ invalid_type_error: "Doit être un nombre" }).min(0, "Ne peut pas être négatif"),
+  shippingCost: z.coerce.number({ invalid_type_error: "Doit être un nombre" }).min(0, "Ne peut pas être négatif"),
 });
 
 type CalculatorValues = z.infer<typeof calculatorSchema>;
@@ -59,14 +59,14 @@ export default function Home() {
           <div className="inline-flex items-center justify-center p-3 bg-white/10 backdrop-blur-md rounded-2xl mb-4 shadow-lg shadow-black/5 ring-1 ring-white/20">
             <Calculator className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl md:text-5xl font-display font-extrabold tracking-tight mb-3 drop-shadow-sm">
+          <h1 className="text-3xl md:text-5xl font-display font-extrabold tracking-tight mb-2 drop-shadow-sm">
             FBA Decision Tool
           </h1>
-          <p className="text-base md:text-lg text-primary-foreground/70 font-semibold tracking-wide uppercase">
+          <p className="text-base md:text-lg font-semibold tracking-wide text-primary-foreground/70 uppercase mb-1">
             Farang Jim
           </p>
-          <p className="text-sm md:text-base text-primary-foreground/60 mt-2">
-            Analyze unit economics instantly — profit, margin, ROI, and break-even in one click.
+          <p className="text-sm md:text-base text-primary-foreground/60">
+            Smart decisions for Amazon sellers
           </p>
         </div>
 
@@ -78,10 +78,10 @@ export default function Home() {
                   <div>
                     <CardTitle className="font-display text-xl flex items-center gap-2">
                       <Package className="w-5 h-5 text-primary" />
-                      Unit Economics
+                      Données produit
                     </CardTitle>
                     <CardDescription className="text-sm mt-1">
-                      Enter costs for a single product unit.
+                      Saisissez les coûts pour une unité.
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
@@ -121,7 +121,7 @@ export default function Home() {
                         <FormItem>
                           <FormLabel className="flex items-center gap-2 text-sm font-semibold">
                             <Tag className="w-4 h-4 text-muted-foreground" />
-                            Selling Price ({currency})
+                            Prix de vente ({currency})
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
@@ -148,7 +148,7 @@ export default function Home() {
                         <FormItem>
                           <FormLabel className="flex items-center gap-2 text-sm font-semibold">
                             <Package className="w-4 h-4 text-muted-foreground" />
-                            Product Cost ({currency})
+                            Coût du produit ({currency})
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
@@ -175,7 +175,7 @@ export default function Home() {
                         <FormItem>
                           <FormLabel className="flex items-center gap-2 text-sm font-semibold">
                             <Receipt className="w-4 h-4 text-muted-foreground" />
-                            Amazon FBA Fees ({currency})
+                            Frais Amazon FBA ({currency})
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
@@ -202,7 +202,7 @@ export default function Home() {
                         <FormItem>
                           <FormLabel className="flex items-center gap-2 text-sm font-semibold">
                             <Plane className="w-4 h-4 text-muted-foreground" />
-                            Shipping Cost ({currency})
+                            Frais de livraison ({currency})
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
@@ -229,7 +229,7 @@ export default function Home() {
                         className="w-full h-13 text-base font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
                         disabled={isCalculating}
                       >
-                        {isCalculating ? "Calculating..." : "Calculate Profit"}
+                        {isCalculating ? "Calcul en cours..." : "Calculer le profit"}
                       </Button>
                     </div>
                   </form>

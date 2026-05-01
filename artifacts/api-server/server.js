@@ -14,7 +14,7 @@ if (!fs.existsSync(DATA_FILE)) {
 }
 
 // 👉 WEBHOOK
-app.post("/webhook", (req, res) => {
+app.post("/webhook", async (req, res) => {
   try {
     console.log("📩 Webhook reçu");
 

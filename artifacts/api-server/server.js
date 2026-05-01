@@ -20,7 +20,15 @@ app.post("/webhook", (req, res) => {
     const event = req.body;
 
     if (event.type === "checkout.session.completed") {
-      const email = event.data.object.customer_details.email;
+      const session = event.data.object;
+
+      const email =
+        session.customer_details?.email ||
+        session.customer_email ||
+        session.customer?.email ||
+        "NO_EMAIL_FOUND";
+
+      console.log("📧 Email détecté :", email);
 
       console.log("📧 Email reçu :", email);
 

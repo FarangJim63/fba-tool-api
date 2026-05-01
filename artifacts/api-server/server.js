@@ -18,9 +18,6 @@ app.post("/webhook", async (req, res) => {
     console.log("📩 Webhook reçu");
 
     const event = req.body;
-    const email = event.data.object.customer_details?.email;
-
-    console.log("Email détecté :", email);
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
@@ -31,24 +28,30 @@ app.post("/webhook", async (req, res) => {
         session.customer_details?.email_address ||
         null;
 
-      console.log("Email détecté :", email);
-
       console.log("📧 Email reçu :", email);
 
-      const data = JSON.parse(fs.readFileSync(DATA_FILE));
+      if (!email) {
+        console.log("❌ Aucun email trouvé");
+        return;
+      }
+
+      const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
 
       if (!data.includes(email)) {
         data.push(email);
+
         fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+
         console.log("✅ Email ajouté !");
+
         await fetch("https://api.pushover.net/1/messages.json", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: new URLSearchParams({
-            token: "az4rdvgdp1ob63bx58isaqqheoayov",
-            user: "ukvbsfyb3ote95u6djv4fqthnoddte",
+            token: "TON_API_TOKEN",
+            user: "TON_USER_KEY",
             message: `💰 Nouveau client premium : ${email}`,
           }),
         });

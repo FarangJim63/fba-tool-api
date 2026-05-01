@@ -50,10 +50,14 @@ app.post("/webhook", async (req, res) => {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: new URLSearchParams({
-            token: "TON_API_TOKEN",
-            user: "TON_USER_KEY",
+            token: "az4rdvgdp1ob63bx58isaqqheoayov",
+            user: "ukvbsfyb3ote95u6djv4fqthnoddte",
             message: `💰 Nouveau client premium : ${email}`,
           }),
+        });
+        app.get("/premium", (req, res) => {
+          const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+          res.json(data);
         });
       } else {
         console.log("ℹ️ Email déjà présent");

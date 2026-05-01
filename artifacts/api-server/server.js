@@ -64,13 +64,6 @@ app.post("/webhook", async (req, res) => {
             res.status(500).send("Erreur lecture fichier");
           }
         });
-        app.get("/premium", (req, res) => {
-          const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
-          res.json(data);
-          app.get("/", (req, res) => {
-            res.send("API OK");
-          });
-        });
       } else {
         console.log("ℹ️ Email déjà présent");
       }

@@ -1,4 +1,5 @@
 run = "node artifacts/api-server/server.js"
+modules = ["nodejs-20"]
 
 [deployment]
 run = ["node", "artifacts/api-server/server.js"]

@@ -56,6 +56,15 @@ app.post("/webhook", async (req, res) => {
           }),
         });
         app.get("/premium", (req, res) => {
+          try {
+            const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+            res.json(data);
+          } catch (err) {
+            console.error("Erreur lecture JSON:", err);
+            res.status(500).send("Erreur lecture fichier");
+          }
+        });
+        app.get("/premium", (req, res) => {
           const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
           res.json(data);
           app.get("/", (req, res) => {

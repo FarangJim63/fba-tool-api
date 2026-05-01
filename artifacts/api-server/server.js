@@ -5,7 +5,7 @@ import path from "path";
 const app = express();
 app.use(express.json());
 
-const DATA_FILE = path.join(process.cwd(), "artifacts/api-server/premium.json");
+const DATA_FILE = "./premium.json";
 
 // 👉 sécuriser le fichier
 if (!fs.existsSync(DATA_FILE)) {

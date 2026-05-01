@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpDown, Lock, Star, Trash2, Trophy } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   type SavedProduct,
@@ -26,7 +32,11 @@ const sortOptions: { key: SortKey; label: string }[] = [
   { key: "profit", label: "Profit" },
 ];
 
-export function ProductList({ products, onRemove, onClearAll }: ProductListProps) {
+export function ProductList({
+  products,
+  onRemove,
+  onClearAll,
+}: ProductListProps) {
   const [sortBy, setSortBy] = useState<SortKey>("roi");
 
   if (products.length === 0) return null;
@@ -84,16 +94,19 @@ export function ProductList({ products, onRemove, onClearAll }: ProductListProps
             <Lock className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
             <p className="text-xs text-amber-700 font-medium">
               Version gratuite — limitée à {FREE_LIMIT} produits
-              <span className="text-amber-500 ml-1">({products.length}/{FREE_LIMIT})</span>
+              <span className="text-amber-500 ml-1">
+                ({products.length}/{FREE_LIMIT})
+              </span>
             </p>
           </div>
         ) : (
           <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-center space-y-3">
             <p className="text-xs text-amber-700 font-medium flex items-center justify-center gap-1.5">
-              <Lock className="w-3.5 h-3.5" /> Limite atteinte — {FREE_LIMIT}/{FREE_LIMIT} produits sauvegardés
+              <Lock className="w-3.5 h-3.5" /> Limite atteinte — {FREE_LIMIT}/
+              {FREE_LIMIT} produits sauvegardés
             </p>
             <a
-              href="https://buy.stripe.com/9B6eVfgIwd2LelC123aR200"
+              href="https://buy.stripe.com/test_6oU28t1NCd2L5P6cKLaR201"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
@@ -145,9 +158,15 @@ export function ProductList({ products, onRemove, onClearAll }: ProductListProps
                     <div className="min-w-0 flex-1">
                       {/* Name + rank */}
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="text-xs font-bold text-muted-foreground">#{index + 1}</span>
-                        <h3 className="font-bold text-sm text-foreground truncate">{product.name}</h3>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
+                        <span className="text-xs font-bold text-muted-foreground">
+                          #{index + 1}
+                        </span>
+                        <h3 className="font-bold text-sm text-foreground truncate">
+                          {product.name}
+                        </h3>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}
+                        >
                           {cfg.status}
                         </span>
                       </div>
@@ -155,20 +174,28 @@ export function ProductList({ products, onRemove, onClearAll }: ProductListProps
                       {/* Metrics row */}
                       <div className="grid grid-cols-3 gap-2">
                         <div className="text-center">
-                          <p className="text-[10px] text-muted-foreground uppercase font-semibold">Profit</p>
+                          <p className="text-[10px] text-muted-foreground uppercase font-semibold">
+                            Profit
+                          </p>
                           <p className={`text-sm font-bold ${cfg.color}`}>
                             {formatCurrency(product.profit, product.currency)}
                           </p>
                         </div>
                         <div className="text-center">
-                          <p className="text-[10px] text-muted-foreground uppercase font-semibold">Marge</p>
+                          <p className="text-[10px] text-muted-foreground uppercase font-semibold">
+                            Marge
+                          </p>
                           <p className={`text-sm font-bold ${cfg.color}`}>
                             {product.margin.toFixed(1)}%
                           </p>
                         </div>
                         <div className="text-center">
-                          <p className="text-[10px] text-muted-foreground uppercase font-semibold">ROI</p>
-                          <p className={`text-sm font-bold ${product.roi >= 0 ? "text-violet-600" : "text-red-600"}`}>
+                          <p className="text-[10px] text-muted-foreground uppercase font-semibold">
+                            ROI
+                          </p>
+                          <p
+                            className={`text-sm font-bold ${product.roi >= 0 ? "text-violet-600" : "text-red-600"}`}
+                          >
                             {product.roi.toFixed(1)}%
                           </p>
                         </div>
@@ -185,15 +212,19 @@ export function ProductList({ products, onRemove, onClearAll }: ProductListProps
                               product.score >= 80
                                 ? "bg-emerald-500"
                                 : product.score >= 50
-                                ? "bg-orange-400"
-                                : "bg-red-500"
+                                  ? "bg-orange-400"
+                                  : "bg-red-500"
                             }`}
                           />
                         </div>
-                        <span className={`text-xs font-bold min-w-[28px] text-right ${scoreInfo.color}`}>
+                        <span
+                          className={`text-xs font-bold min-w-[28px] text-right ${scoreInfo.color}`}
+                        >
                           {product.score}
                         </span>
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${scoreInfo.bg} ${scoreInfo.color}`}>
+                        <span
+                          className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${scoreInfo.bg} ${scoreInfo.color}`}
+                        >
                           {scoreInfo.label}
                         </span>
                       </div>

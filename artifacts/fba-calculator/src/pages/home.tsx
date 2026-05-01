@@ -1,12 +1,32 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BookmarkPlus, Calculator, Package, Plane, Receipt, Tag } from "lucide-react";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  BookmarkPlus,
+  Calculator,
+  Package,
+  Plane,
+  Receipt,
+  Tag,
+} from "lucide-react";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ResultsDisplay } from "@/components/results-display";
 import { ProductList } from "@/components/product-list";
 import { useProducts } from "@/hooks/use-products";
@@ -14,10 +34,18 @@ import { type Currency, calcMetrics } from "@/lib/fba-utils";
 
 const calculatorSchema = z.object({
   productName: z.string().min(1, "Nom requis"),
-  sellingPrice: z.coerce.number({ invalid_type_error: "Doit être un nombre" }).min(0, "Ne peut pas être négatif"),
-  productCost: z.coerce.number({ invalid_type_error: "Doit être un nombre" }).min(0, "Ne peut pas être négatif"),
-  amazonFees: z.coerce.number({ invalid_type_error: "Doit être un nombre" }).min(0, "Ne peut pas être négatif"),
-  shippingCost: z.coerce.number({ invalid_type_error: "Doit être un nombre" }).min(0, "Ne peut pas être négatif"),
+  sellingPrice: z.coerce
+    .number({ invalid_type_error: "Doit être un nombre" })
+    .min(0, "Ne peut pas être négatif"),
+  productCost: z.coerce
+    .number({ invalid_type_error: "Doit être un nombre" })
+    .min(0, "Ne peut pas être négatif"),
+  amazonFees: z.coerce
+    .number({ invalid_type_error: "Doit être un nombre" })
+    .min(0, "Ne peut pas être négatif"),
+  shippingCost: z.coerce
+    .number({ invalid_type_error: "Doit être un nombre" })
+    .min(0, "Ne peut pas être négatif"),
 });
 
 type CalculatorValues = z.infer<typeof calculatorSchema>;
@@ -25,11 +53,30 @@ type CalculatorValues = z.infer<typeof calculatorSchema>;
 export type { Currency };
 
 export default function Home() {
+  const [userEmail, setUserEmail] = useState("");
+  const [isPremium, setIsPremium] = useState(false);
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("userEmail");
+    if (savedEmail) {
+      setUserEmail(savedEmail.trim().toLowerCase());
+    }
+  }, []);
+  useEffect(() => {}, []);
+
+  useEffect(() => {
+    if (userEmail) {
+      localStorage.setItem("userEmail", userEmail);
+    }
+  }, [userEmail]);
+
+  const [usageCount, setUsageCount] = useState(0);
   const [results, setResults] = useState<CalculatorValues | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [currency, setCurrency] = useState<Currency>("USD");
   const { products, addProduct, removeProduct, clearAll } = useProducts();
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const form = useForm<CalculatorValues>({
     resolver: zodResolver(calculatorSchema),
@@ -41,9 +88,72 @@ export default function Home() {
       shippingCost: 0,
     },
   });
+  useEffect(() => {
+    if (!userEmail) return;
 
-  const onSubmit = (data: CalculatorValues) => {
+    fetch("/check-premium?email=" + encodeURIComponent(userEmail))
+      .then((res) => res.json())
+
+      .then((data) => {
+        console.log("✅ premium reçu =", data.premium);
+
+        setIsPremium(data.premium);
+      })
+
+      .catch((err) => console.log("Erreur check premium:", err));
+  }, [userEmail]);
+  useEffect(() => {
+    const url = window.location.href;
+
+    if (url.includes("success")) {
+      console.log("🎯 retour paiement détecté");
+
+      if (userEmail) {
+        fetch("/check-premium?email=" + encodeURIComponent(userEmail))
+          .then((res) => res.json())
+          .then((data) => {
+            setIsPremium(data.premium);
+          });
+      }
+    }
+  }, []);
+  const onSubmit = async (data: CalculatorValues) => {
+    console.log("SUBMIT OK");
+    // 🔐 CHECK PREMIUM
+    const email = userEmail.trim().toLowerCase();
+    if (!userEmail) {
+      alert("Veuillez entrer votre email");
+      return;
+    }
+    try {
+      const res = await fetch(
+        "https://6ec06285-b7ed-4dab-88a3-de94a9ed9aa8-00-3clbbaslrlsr6.picard.replit.dev/check-premium?email=" +
+          encodeURIComponent(email),
+      );
+      const premiumData = await res.json();
+
+      if (!premiumData.premium) {
+        alert("Accès réservé aux utilisateurs premium");
+        return;
+      }
+
+      setIsPremium(true);
+      setShowPaywall(false);
+
+      console.log("PREMIUM OK");
+    } catch (error) {
+      console.error("Erreur fetch premium :", error);
+    }
+
+    // 👇 TON CODE EXISTANT CONTINUE ICI
+    if (!isPremium && products.length >= FREE_LIMIT) {
+      setShowPaywall(true);
+      return;
+    }
+
+    setUsageCount(usageCount + 1);
     setIsCalculating(true);
+
     setTimeout(() => {
       setResults(data);
       setIsCalculating(false);
@@ -59,14 +169,14 @@ export default function Home() {
       form.setError("productName", { message: "Nom requis pour sauvegarder" });
       return;
     }
-    if (products.length >= FREE_LIMIT) {
+    if (!isPremium && products.length >= FREE_LIMIT) {
       return;
     }
     const { profit, margin, roi, score } = calcMetrics(
       results.sellingPrice,
       results.productCost,
       results.amazonFees,
-      results.shippingCost
+      results.shippingCost,
     );
     addProduct({
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -92,7 +202,9 @@ export default function Home() {
     <div className="min-h-screen bg-background relative flex flex-col">
       <div
         className="absolute top-0 w-full h-[40vh] bg-cover bg-center bg-no-repeat opacity-90 border-b border-border/50 shadow-sm"
-        style={{ backgroundImage: `url(${import.meta.env.BASE_URL}images/hero-bg.png)` }}
+        style={{
+          backgroundImage: `url(${import.meta.env.BASE_URL}images/hero-bg.png)`,
+        }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/40 to-background" />
       </div>
@@ -103,14 +215,19 @@ export default function Home() {
           <div className="inline-flex items-center justify-center p-3 bg-white/10 backdrop-blur-md rounded-2xl mb-4 shadow-lg shadow-black/5 ring-1 ring-white/20">
             <Calculator className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl md:text-5xl font-display font-extrabold tracking-tight mb-2 drop-shadow-sm">
-            FBA Decision Tool
+          <h1 className="text-3xl md:text-5xl font-bold font-extrabold tracking-tight mb-2 drop-shadow-sm">
+            Décide en 10 secondes si ton produit Amazon FBA est rentable
           </h1>
-          <p className="text-base md:text-lg font-semibold tracking-wide text-primary-foreground/70 uppercase mb-1">
-            Farang Jim
+
+          <div className="mt-2 text-sm text-center text-yellow-300">
+            🎁 2 calculs gratuits • Débloque les analyses illimitées 🚀
+          </div>
+          <p className="text-base md:text-lg font-semibold tracking-wide text-primary-foreground/70 mb-1">
+            Par Farang Jim
           </p>
+
           <p className="text-sm md:text-base text-primary-foreground/60">
-            Smart decisions for Amazon sellers
+            Évite les erreurs coûteuses et maximise tes marges dès aujourd’hui.
           </p>
         </div>
 
@@ -151,7 +268,66 @@ export default function Home() {
               </CardHeader>
               <CardContent className="p-6">
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-4"
+                  >
+                    <div style={{ marginBottom: "10px" }}>
+                      <label>Email</label>
+                      <input
+                        type="email"
+                        placeholder="Votre email"
+                        value={userEmail}
+                        onChange={(e) => setUserEmail(e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          border: "1px solid #ccc",
+                          borderRadius: "8px",
+                          marginTop: "5px",
+                        }}
+                        required
+                      />
+                    </div>
+                    {showPaywall && (
+                      <div
+                        style={{
+                          background: "#fff3cd",
+                          padding: "15px",
+                          borderRadius: "10px",
+                          border: "1px solid #ffeeba",
+                        }}
+                      >
+                        <div style={{ marginBottom: "10px" }}>
+                          🚀 Fonctionnalité premium
+                        </div>
+
+                        <div style={{ marginBottom: "10px" }}>
+                          Passe à la version premium pour débloquer toutes les
+                          analyses.
+                        </div>
+
+                        <button
+                          onClick={() =>
+                            window.open(
+                              "https://buy.stripe.com/test_6oU28t1NCd2L5P6cKLaR201",
+                              "_blank",
+                            )
+                          }
+                          style={{
+                            background: "#ff6b00",
+                            color: "white",
+                            padding: "10px",
+                            borderRadius: "8px",
+                            border: "none",
+                            cursor: "pointer",
+                          }}
+                        >
+                          🚀 Passer à la version premium
+                        </button>
+                      </div>
+                    )}
+
                     {/* Product Name */}
                     <FormField
                       control={form.control}
@@ -195,7 +371,9 @@ export default function Home() {
                                 placeholder="0.00"
                                 className="pl-8 h-12 text-base rounded-xl focus-visible:ring-primary/20 focus-visible:border-primary transition-all shadow-sm"
                                 {...field}
-                                onClick={(e) => (e.target as HTMLInputElement).select()}
+                                onClick={(e) =>
+                                  (e.target as HTMLInputElement).select()
+                                }
                               />
                             </div>
                           </FormControl>
@@ -225,7 +403,9 @@ export default function Home() {
                                 placeholder="0.00"
                                 className="pl-8 h-12 text-base rounded-xl focus-visible:ring-primary/20 focus-visible:border-primary transition-all shadow-sm"
                                 {...field}
-                                onClick={(e) => (e.target as HTMLInputElement).select()}
+                                onClick={(e) =>
+                                  (e.target as HTMLInputElement).select()
+                                }
                               />
                             </div>
                           </FormControl>
@@ -255,7 +435,9 @@ export default function Home() {
                                 placeholder="0.00"
                                 className="pl-8 h-12 text-base rounded-xl focus-visible:ring-primary/20 focus-visible:border-primary transition-all shadow-sm"
                                 {...field}
-                                onClick={(e) => (e.target as HTMLInputElement).select()}
+                                onClick={(e) =>
+                                  (e.target as HTMLInputElement).select()
+                                }
                               />
                             </div>
                           </FormControl>
@@ -285,7 +467,9 @@ export default function Home() {
                                 placeholder="0.00"
                                 className="pl-8 h-12 text-base rounded-xl focus-visible:ring-primary/20 focus-visible:border-primary transition-all shadow-sm"
                                 {...field}
-                                onClick={(e) => (e.target as HTMLInputElement).select()}
+                                onClick={(e) =>
+                                  (e.target as HTMLInputElement).select()
+                                }
                               />
                             </div>
                           </FormControl>
@@ -302,7 +486,9 @@ export default function Home() {
                         className="w-full h-12 text-base font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
                         disabled={isCalculating}
                       >
-                        {isCalculating ? "Calcul en cours..." : "Calculer le profit"}
+                        {isCalculating
+                          ? "Calcul en cours..."
+                          : "Calculer le profit"}
                       </Button>
 
                       {results && (
@@ -312,25 +498,30 @@ export default function Home() {
                             variant="outline"
                             size="lg"
                             onClick={handleSave}
-                            disabled={products.length >= FREE_LIMIT}
+                            disabled={
+                              !isPremium && products.length >= FREE_LIMIT
+                            }
                             className={`w-full h-12 text-base font-bold rounded-xl transition-all duration-200 flex items-center gap-2 ${
                               savedFlash
                                 ? "border-emerald-500 text-emerald-600 bg-emerald-50"
-                                : products.length >= FREE_LIMIT
-                                ? "opacity-50 cursor-not-allowed"
-                                : "hover:-translate-y-0.5"
+                                : !isPremium && products.length >= FREE_LIMIT
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : "hover:-translate-y-0.5"
                             }`}
                           >
                             <BookmarkPlus className="w-4 h-4" />
-                            {savedFlash ? "Produit sauvegardé ✓" : "Sauvegarder ce produit"}
+                            {savedFlash
+                              ? "Produit sauvegardé ✓"
+                              : "Sauvegarder ce produit"}
                           </Button>
-                          {products.length >= FREE_LIMIT && (
+                          {!isPremium && products.length >= FREE_LIMIT && (
                             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center space-y-3">
                               <p className="text-xs text-amber-700 font-medium">
-                                Limite atteinte — version gratuite (2 produits max)
+                                Limite atteinte — version gratuite (2 produits
+                                max)
                               </p>
                               <a
-                                href="https://buy.stripe.com/9B6eVfgIwd2LelC123aR200"
+                                href="https://buy.stripe.com/test_6oU28t1NCd2L5P6cKLaR201"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
@@ -338,7 +529,8 @@ export default function Home() {
                                 🚀 Passer à la version premium
                               </a>
                               <p className="text-[11px] text-amber-600/80">
-                                Accès illimité + comparaison avancée + scoring complet
+                                Accès illimité + comparaison avancée + scoring
+                                complet
                               </p>
                               <p className="text-[10px] text-amber-500/70 flex items-center justify-center gap-1">
                                 🔒 Paiement sécurisé via Stripe
@@ -366,6 +558,42 @@ export default function Home() {
           onRemove={removeProduct}
           onClearAll={clearAll}
         />
+        {/* PAYWALL PREMIUM */}
+
+        {showPaywall && (
+          <div className="mt-6 p-6 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-xl text-center">
+            <h2 className="text-2xl font-bold mb-2">
+              🚀 Passe en version Premium
+            </h2>
+
+            <p className="mb-4 text-white/90">
+              Analyse tes produits sans limite et maximise tes profits dès
+              maintenant.
+            </p>
+
+            <ul className="text-sm mb-6 space-y-1 text-white/80">
+              <li>✔ Calcul illimité</li>
+
+              <li>✔ Profit, marge, ROI instantané</li>
+
+              <li>✔ Aide à la décision rapide</li>
+            </ul>
+
+            <button
+              onClick={() =>
+                window.open(
+                  "https://buy.stripe.com/test_6oU28t1NCd2L5P6cKLaR201",
+                )
+              }
+              className="bg-white text-black font-bold px-6 py-3 rounded-xl hover:scale-105 transition"
+            >
+              🔓 Débloquer maintenant – 9€ (accès à vie)
+            </button>
+            <p className="text-xs text-white/70 mt-2">
+              💳 Paiement sécurisé • Accès immédiat après paiement
+            </p>
+          </div>
+        )}
       </main>
     </div>
   );

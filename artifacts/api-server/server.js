@@ -55,10 +55,6 @@ app.post("/webhook", async (req, res) => {
             message: `💰 Nouveau client premium : ${email}`,
           }),
         });
-        app.get("/premium", (req, res) => {
-          const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
-          res.json(data);
-        });
       } else {
         console.log("ℹ️ Email déjà présent");
       }

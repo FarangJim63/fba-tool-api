@@ -18,7 +18,6 @@ if (fs.existsSync(DATA_FILE)) {
   const data = JSON.parse(fs.readFileSync(DATA_FILE));
   premiumUsers = new Set(data);
 }
-import express from "express";
 import bodyParser from "body-parser";
 
 const app = express();

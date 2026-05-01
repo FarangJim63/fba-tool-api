@@ -1,6 +1,7 @@
 import express from "express";
 import fs from "fs";
 import path from "path";
+import fetch from "node-fetch";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +39,17 @@ app.post("/webhook", (req, res) => {
         data.push(email);
         fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
         console.log("✅ Email ajouté !");
+        await fetch("https://api.pushover.net/1/messages.json", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            token: "az4rdvgdp1ob63bx58isaqqheoayov",
+            user: "ukvbsfyb3ote95u6djv4fqthnoddte",
+            message: `💰 Nouveau client premium : ${email}`,
+          }),
+        });
       } else {
         console.log("ℹ️ Email déjà présent");
       }

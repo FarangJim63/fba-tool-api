@@ -18,6 +18,9 @@ app.post("/webhook", async (req, res) => {
     console.log("📩 Webhook reçu");
 
     const event = req.body;
+    const email = event.data.object.customer_details?.email;
+
+    console.log("Email détecté :", email);
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
@@ -25,10 +28,10 @@ app.post("/webhook", async (req, res) => {
       const email =
         session.customer_details?.email ||
         session.customer_email ||
-        session.customer?.email ||
-        "NO_EMAIL_FOUND";
+        session.customer_details?.email_address ||
+        null;
 
-      console.log("📧 Email détecté :", email);
+      console.log("Email détecté :", email);
 
       console.log("📧 Email reçu :", email);
 

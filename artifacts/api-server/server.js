@@ -55,15 +55,6 @@ app.post("/webhook", async (req, res) => {
             message: `💰 Nouveau client premium : ${email}`,
           }),
         });
-        app.get("/premium", (req, res) => {
-          try {
-            const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
-            res.json(data);
-          } catch (err) {
-            console.error("Erreur lecture JSON:", err);
-            res.status(500).send("Erreur lecture fichier");
-          }
-        });
       } else {
         console.log("ℹ️ Email déjà présent");
       }
@@ -73,6 +64,15 @@ app.post("/webhook", async (req, res) => {
   } catch (err) {
     console.error("❌ Erreur webhook :", err);
     res.status(500).send("Erreur serveur");
+  }
+});
+app.get("/premium", (req, res) => {
+  try {
+    const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+    res.json(data);
+  } catch (err) {
+    console.error("Erreur lecture JSON:", err);
+    res.status(500).send("Erreur lecture fichier");
   }
 });
 

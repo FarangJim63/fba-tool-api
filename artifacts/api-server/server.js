@@ -34,8 +34,8 @@ app.post("/webhook", async (req, res) => {
       .from("premium_users")
       .insert([{ email }]);
 
-    console.log("📦 RESULT:", data);
-    console.log("❌ ERROR:", error);
+    console.log("🟢 SUPABASE DATA:", data);
+    console.log("🔴 SUPABASE ERROR:", error);
 
     res.status(200).send("OK");
   } catch (err) {

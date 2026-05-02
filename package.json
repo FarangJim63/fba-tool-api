@@ -6,6 +6,7 @@
     "start": "node artifacts/api-server/server.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.1",
     "express": "^5.2.1"
   }
 }

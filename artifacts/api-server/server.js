@@ -19,30 +19,29 @@ app.post("/webhook", async (req, res) => {
 
     const event = req.body;
 
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
+        // 🔥 nouveau bloc SUPABASE
+        if (event.data?.object) {
+          const session = event.data.object;
 
-      const email =
-        session.customer_details?.email?.toLowerCase() ||
-        session.customer_email?.toLowerCase() ||
-        session.customer_details?.email_address?.toLowerCase() ||
-        null;
+          const email =
+            session.customer_details?.email?.toLowerCase() ||
+            session.customer_email?.toLowerCase() ||
+            null;
 
-      console.log("📧 Email reçu :", email);
+          console.log("🔥 TEST SUPABASE INSERT:", email);
 
-      if (!email) {
-        console.log("❌ Aucun email trouvé");
-        return;
-      }
+          if (!email) {
+            console.log("❌ Aucun email trouvé");
+            return;
+          }
 
-      const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+          const { data, error } = await supabase
+            .from("premium_users")
+            .insert([{ email }]);
 
-      if (!data.includes(email)) {
-        data.push(email);
-
-        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-
-        console.log("✅ Email ajouté !");
+          console.log("📦 RESULT:", data);
+          console.log("❌ ERROR:", error);
+        }
 
         await fetch("https://api.pushover.net/1/messages.json", {
           method: "POST",
@@ -82,9 +81,17 @@ app.get("/check-premium", (req, res) => {
     return res.status(400).json({ error: "Email requis" });
   }
 
-  const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+  const { data, error } = await supabase
+    .from("premium_users")
+    .select("*")
+    .eq("email", email.toLowerCase());
 
-  const isPremium = data.includes(email?.toLowerCase());
+  if (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Erreur Supabase" });
+  }
+
+  const isPremium = data.length > 0;
 
   res.json({ premium: isPremium });
 });

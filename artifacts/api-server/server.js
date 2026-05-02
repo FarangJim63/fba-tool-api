@@ -75,6 +75,19 @@ app.get("/premium", (req, res) => {
     res.status(500).send("Erreur lecture fichier");
   }
 });
+app.get("/check-premium", (req, res) => {
+  const email = req.query.email;
+
+  if (!email) {
+    return res.status(400).json({ error: "Email requis" });
+  }
+
+  const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+
+  const isPremium = data.includes(email);
+
+  res.json({ premium: isPremium });
+});
 
 // 👉 PORT obligatoire pour Render
 const PORT = process.env.PORT || 3000;

@@ -23,9 +23,9 @@ app.post("/webhook", async (req, res) => {
       const session = event.data.object;
 
       const email =
-        session.customer_details?.email ||
-        session.customer_email ||
-        session.customer_details?.email_address ||
+        session.customer_details?.email?.toLowerCase() ||
+        session.customer_email?.toLowerCase() ||
+        session.customer_details?.email_address?.toLowerCase() ||
         null;
 
       console.log("📧 Email reçu :", email);
@@ -84,7 +84,7 @@ app.get("/check-premium", (req, res) => {
 
   const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
 
-  const isPremium = data.includes(email);
+  const isPremium = data.includes(email?.toLowerCase());
 
   res.json({ premium: isPremium });
 });

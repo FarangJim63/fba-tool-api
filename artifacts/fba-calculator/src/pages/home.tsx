@@ -310,7 +310,7 @@ export default function Home() {
                         <button
                           onClick={() =>
                             window.open(
-                              "https://buy.stripe.com/test_6oU28t1NCd2L5P6cKLaR201",
+                              "https://buy.stripe.com/9B6fZjak8e6PelCeSTaR205",
                               "_blank",
                             )
                           }
@@ -521,7 +521,7 @@ export default function Home() {
                                 max)
                               </p>
                               <a
-                                href="https://buy.stripe.com/test_6oU28t1NCd2L5P6cKLaR201"
+                                href="https://buy.stripe.com/9B6fZjak8e6PelCeSTaR205"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
@@ -582,7 +582,7 @@ export default function Home() {
             <button
               onClick={() =>
                 window.open(
-                  "https://buy.stripe.com/test_6oU28t1NCd2L5P6cKLaR201",
+                  "https://buy.stripe.com/9B6fZjak8e6PelCeSTaR205",
                 )
               }
               className="bg-white text-black font-bold px-6 py-3 rounded-xl hover:scale-105 transition"
